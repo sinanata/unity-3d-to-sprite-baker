@@ -205,7 +205,19 @@
    Top of the screen is too narrow on phones to absolutely-position the
    title, the Idle/Run/Jump pill, and the GitHub button at the same
    y=16px row — they collide. Drop all three back into the document
-   flow so they stack vertically. */
+   flow so they stack vertically.
+
+   Unity USS gotchas baked in:
+   - `max-width: none` is NOT accepted by Unity's USS parser; use a
+     percentage or omit. We use 100% so child + 12 px margins won't
+     overflow the parent.
+   - `top: auto` / `right: auto` are accepted but unreliable when
+     transitioning a position:absolute element to position:relative —
+     prefer explicit 0 offsets so the element really lands at its
+     in-flow location.
+   - Order of properties matters: set `position: relative` BEFORE the
+     offset clear-out so Unity re-runs layout against the new
+     positioning model. */
 .mobile .demo-panel--instructions {
     display: none;
 }
@@ -218,42 +230,47 @@
 }
 
 .mobile .demo-title-block {
-    max-width: none;
+    max-width: 100%;
     margin-left: 12px;
     margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.mobile .demo-promo {
+    position: relative;
+    top: 0;
+    right: 0;
+    left: 0;
+    align-self: flex-start;
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-2);
+    max-width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    flex-shrink: 0;
+}
+.mobile .demo-promo > .ds-btn {
+    margin-left: 0;
+    margin-right: var(--space-2);
 }
 
 .mobile .demo-row-selector {
     position: relative;
-    top: auto;
+    top: 0;
     align-self: center;
     margin-top: var(--space-2);
     margin-bottom: var(--space-2);
     flex-wrap: wrap;
     justify-content: center;
+    flex-shrink: 0;
 }
 .mobile .demo-row-selector > .ds-btn {
-    min-width: 88px;
+    min-width: 80px;
     margin-left: 3px;
     margin-right: 3px;
-}
-
-.mobile .demo-promo {
-    position: relative;
-    top: auto;
-    right: auto;
-    align-self: flex-start;
-    margin-left: 12px;
-    margin-right: 12px;
-    margin-bottom: var(--space-2);
-    max-width: none;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-}
-.mobile .demo-promo > .ds-btn {
-    margin-left: 0;
-    margin-right: var(--space-2);
 }
 
 /* Status toast was anchored to top: 70px so it cleared the absolutely
