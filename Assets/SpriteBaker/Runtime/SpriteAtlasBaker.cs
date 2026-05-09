@@ -384,54 +384,69 @@ namespace SpriteBaker
 
         // Build the runtime playback material for a baked atlas.
         //
-        // We deliberately drive URP/Unlit directly with runtime keyword +
-        // property setup, INSTEAD of using the bundled SpriteBaker/AtlasCutout
-        // custom shader. Reason (from prior LoL production WebGL2 incident):
-        // custom URP shaders compiled by `new Material(shader)` at runtime
-        // hit an HLSL→GLSL ES 3.0 cross-compilation regression on WebGL2
-        // and render solid black, even when every defensive checklist item
-        // (white-texture binding, shadow-keyword strip, CBUFFER reordering)
-        // passes. Editor + standalone builds are unaffected, so it's invisible
-        // until you ship to the web. The robust fix is to avoid runtime-
-        // instantiated custom URP shaders entirely; URP/Unlit is precompiled
-        // by Unity's shader pipeline against every supported backend and
-        // doesn't exhibit the bug.
-        //
-        // The cutout behavior we want — alpha-clipped, double-sided (for
-        // billboarded quads), opaque pass — maps cleanly onto URP/Unlit
-        // with `_AlphaClip = 1`, `_ALPHATEST_ON` keyword, `_Cull = 0`. The
-        // SpriteBaker/AtlasCutout shader is left in the package for users
-        // who want to fork/extend it on non-WebGL targets.
+        // Two-layer fix for WebGL2:
+        // (1) We deliberately drive URP/Unlit directly with runtime keyword
+        //     + property setup, INSTEAD of the bundled SpriteBaker/AtlasCutout
+        //     custom shader. Custom URP shaders compiled by `new Material(shader)`
+        //     at runtime hit an HLSL→GLSL ES 3.0 cross-compile regression on
+        //     WebGL2 and render solid black (LoL/mesh-fracture production
+        //     incident); URP/Unlit is precompiled by Unity's shader pipeline
+        //     against every supported backend and doesn't exhibit the bug.
+        // (2) URP/Unlit declares `_ALPHATEST_ON` as `shader_feature_local_fragment`,
+        //     so the alpha-clip variant is STRIPPED from the WebGL build
+        //     unless a project-asset material has the keyword set at build
+        //     time. A runtime `EnableKeyword("_ALPHATEST_ON")` is a silent
+        //     no-op against a stripped variant — the fragment shader still
+        //     runs the no-clip path and the entire quad renders opaque
+        //     (characters' silhouettes show their texture, but the area
+        //     around them renders solid black instead of being clipped to
+        //     transparent). Fix: ship a ready-keyword'd template material
+        //     (see EnsureAtlasTemplateMaterial editor script) and
+        //     instantiate from it via `new Material(template)` so the
+        //     keyword set propagates to the runtime instance.
+        private const string ATLAS_TEMPLATE_RESOURCE = "SpriteBakerAtlasUnlitTemplate";
+
         private static Material CreateAtlasPlaybackMaterial(Texture2D atlas)
         {
-            const string UNLIT = "Universal Render Pipeline/Unlit";
-            var shader = Shader.Find(UNLIT) ?? Shader.Find("SpriteBaker/AtlasCutout") ?? Shader.Find("Sprites/Default");
-            if (shader == null)
+            // Preferred path: instantiate from the template asset so the
+            // _ALPHATEST_ON variant survives build stripping.
+            var template = Resources.Load<Material>(ATLAS_TEMPLATE_RESOURCE);
+            Material mat;
+            if (template != null)
             {
-                Debug.LogError($"[SpriteAtlasBaker] No usable playback shader found ('{UNLIT}', 'SpriteBaker/AtlasCutout', or 'Sprites/Default'). Atlas material will be null and sprites will render magenta.");
-                return null;
+                mat = new Material(template);
+            }
+            else
+            {
+                // Fallback for projects that haven't generated the template
+                // yet (fresh import — the editor script creates it on next
+                // domain reload). Editor + standalone builds work fine even
+                // without the template; only WebGL alpha-clip is at risk.
+                Debug.LogWarning($"[SpriteAtlasBaker] Resources/{ATLAS_TEMPLATE_RESOURCE}.mat not found — open the project in the Unity editor once so EnsureAtlasTemplateMaterial generates it. Falling back to a runtime-configured URP/Unlit material; on WebGL the alpha-clip variant may have been stripped, leaving sprite quads with opaque black backgrounds.");
+                const string UNLIT = "Universal Render Pipeline/Unlit";
+                var shader = Shader.Find(UNLIT) ?? Shader.Find("SpriteBaker/AtlasCutout") ?? Shader.Find("Sprites/Default");
+                if (shader == null)
+                {
+                    Debug.LogError($"[SpriteAtlasBaker] No usable playback shader found ('{UNLIT}', 'SpriteBaker/AtlasCutout', or 'Sprites/Default'). Sprites will render magenta.");
+                    return null;
+                }
+                mat = new Material(shader);
             }
 
-            var mat = new Material(shader);
             mat.name = "BakedSpriteAtlas (URP Unlit Cutout)";
 
-            // _BaseMap is URP/Unlit's main texture slot. Set both _BaseMap
-            // and material.mainTexture so SRP Batcher and legacy code paths
-            // both see the texture.
             if (mat.HasProperty("_BaseMap"))    mat.SetTexture("_BaseMap", atlas);
             if (mat.HasProperty("_BaseColor"))  mat.SetColor("_BaseColor", Color.white);
             if (mat.HasProperty("_BaseMap_ST")) mat.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
             mat.mainTexture = atlas;
 
-            // Alpha-cutout: opaque surface with hard alpha clip. URP/Unlit
-            // gates this on _AlphaClip + the _ALPHATEST_ON keyword; setting
-            // the property without the keyword is a no-op. Setting both
-            // matches what the inspector emits when you toggle "Alpha Clip".
-            if (mat.HasProperty("_Surface"))   mat.SetFloat("_Surface", 0f); // Opaque
+            // Re-assert keyword + properties even when instantiating from
+            // template (cheap, defensive against template drift).
+            if (mat.HasProperty("_Surface"))   mat.SetFloat("_Surface", 0f);
             if (mat.HasProperty("_Blend"))     mat.SetFloat("_Blend", 0f);
             if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 1f);
             if (mat.HasProperty("_Cutoff"))    mat.SetFloat("_Cutoff", 0.5f);
-            if (mat.HasProperty("_Cull"))      mat.SetFloat("_Cull", 0f); // Off — billboarded quads need both faces visible
+            if (mat.HasProperty("_Cull"))      mat.SetFloat("_Cull", 0f);
             if (mat.HasProperty("_ZWrite"))    mat.SetFloat("_ZWrite", 1f);
             if (mat.HasProperty("_SrcBlend"))  mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
             if (mat.HasProperty("_DstBlend"))  mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
