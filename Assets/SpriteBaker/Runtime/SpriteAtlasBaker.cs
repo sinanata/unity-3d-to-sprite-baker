@@ -354,11 +354,7 @@ namespace SpriteBaker
             RenderSettings.ambientMode      = originalAmbientMode;
             Destroy(model);
 
-            // Fall back to URP/Unlit when the bundled shader isn't present.
-            var shader = Shader.Find("SpriteBaker/AtlasCutout") ?? Shader.Find("Universal Render Pipeline/Unlit");
-            var material = new Material(shader);
-            material.mainTexture = atlas;
-            if (material.HasProperty("_Cutoff")) material.SetFloat("_Cutoff", 0.5f);
+            var material = CreateAtlasPlaybackMaterial(atlas);
 
             var rowInfos = new AnimRowInfo[totalRows];
             for (int r = 0; r < totalRows; r++)
@@ -385,6 +381,70 @@ namespace SpriteBaker
         }
 
         // ─── Helpers ─────────────────────────────────────────────────────
+
+        // Build the runtime playback material for a baked atlas.
+        //
+        // We deliberately drive URP/Unlit directly with runtime keyword +
+        // property setup, INSTEAD of using the bundled SpriteBaker/AtlasCutout
+        // custom shader. Reason (from prior LoL production WebGL2 incident):
+        // custom URP shaders compiled by `new Material(shader)` at runtime
+        // hit an HLSL→GLSL ES 3.0 cross-compilation regression on WebGL2
+        // and render solid black, even when every defensive checklist item
+        // (white-texture binding, shadow-keyword strip, CBUFFER reordering)
+        // passes. Editor + standalone builds are unaffected, so it's invisible
+        // until you ship to the web. The robust fix is to avoid runtime-
+        // instantiated custom URP shaders entirely; URP/Unlit is precompiled
+        // by Unity's shader pipeline against every supported backend and
+        // doesn't exhibit the bug.
+        //
+        // The cutout behavior we want — alpha-clipped, double-sided (for
+        // billboarded quads), opaque pass — maps cleanly onto URP/Unlit
+        // with `_AlphaClip = 1`, `_ALPHATEST_ON` keyword, `_Cull = 0`. The
+        // SpriteBaker/AtlasCutout shader is left in the package for users
+        // who want to fork/extend it on non-WebGL targets.
+        private static Material CreateAtlasPlaybackMaterial(Texture2D atlas)
+        {
+            const string UNLIT = "Universal Render Pipeline/Unlit";
+            var shader = Shader.Find(UNLIT) ?? Shader.Find("SpriteBaker/AtlasCutout") ?? Shader.Find("Sprites/Default");
+            if (shader == null)
+            {
+                Debug.LogError($"[SpriteAtlasBaker] No usable playback shader found ('{UNLIT}', 'SpriteBaker/AtlasCutout', or 'Sprites/Default'). Atlas material will be null and sprites will render magenta.");
+                return null;
+            }
+
+            var mat = new Material(shader);
+            mat.name = "BakedSpriteAtlas (URP Unlit Cutout)";
+
+            // _BaseMap is URP/Unlit's main texture slot. Set both _BaseMap
+            // and material.mainTexture so SRP Batcher and legacy code paths
+            // both see the texture.
+            if (mat.HasProperty("_BaseMap"))    mat.SetTexture("_BaseMap", atlas);
+            if (mat.HasProperty("_BaseColor"))  mat.SetColor("_BaseColor", Color.white);
+            if (mat.HasProperty("_BaseMap_ST")) mat.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
+            mat.mainTexture = atlas;
+
+            // Alpha-cutout: opaque surface with hard alpha clip. URP/Unlit
+            // gates this on _AlphaClip + the _ALPHATEST_ON keyword; setting
+            // the property without the keyword is a no-op. Setting both
+            // matches what the inspector emits when you toggle "Alpha Clip".
+            if (mat.HasProperty("_Surface"))   mat.SetFloat("_Surface", 0f); // Opaque
+            if (mat.HasProperty("_Blend"))     mat.SetFloat("_Blend", 0f);
+            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 1f);
+            if (mat.HasProperty("_Cutoff"))    mat.SetFloat("_Cutoff", 0.5f);
+            if (mat.HasProperty("_Cull"))      mat.SetFloat("_Cull", 0f); // Off — billboarded quads need both faces visible
+            if (mat.HasProperty("_ZWrite"))    mat.SetFloat("_ZWrite", 1f);
+            if (mat.HasProperty("_SrcBlend"))  mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            if (mat.HasProperty("_DstBlend"))  mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+
+            mat.EnableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            mat.DisableKeyword("_ALPHAMODULATE_ON");
+            mat.SetOverrideTag("RenderType", "TransparentCutout");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+
+            return mat;
+        }
 
         // URP's officially-supported synchronous render-to-texture entry
         // point. Camera.Render() is NOT supported on URP — on Windows
