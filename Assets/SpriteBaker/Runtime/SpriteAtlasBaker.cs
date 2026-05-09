@@ -93,6 +93,16 @@ namespace SpriteBaker
             var model = Instantiate(req.Prefab);
             model.name = "[SpriteCaptureModel]";
 
+            // Strip AudioListeners from the captured copy. Some prefabs
+            // (Kenney AC2 ships an AudioListener on the rig root) introduce
+            // a second listener every time we Instantiate the prefab; the
+            // editor logs a warning but WebGL2's WebAudio backend can hard-
+            // fail (stops processing) when more than one listener is alive.
+            // Cameras + AudioSources are fine; only AudioListener is the
+            // singleton-by-convention component.
+            foreach (var al in model.GetComponentsInChildren<AudioListener>(true))
+                Destroy(al);
+
             // COMPOSE — don't replace. The prefab's authored localRotation
             // carries the FBX importer's axis correction (Blender Z-up→Y-up
             // is stored as -90° X when bakeAxisConversion=0); replacing it

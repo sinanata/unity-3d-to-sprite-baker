@@ -35,11 +35,14 @@ namespace SpriteBakerDemo.BuildTools
                 PlayerSettings.WebGL.decompressionFallback = true;
                 PlayerSettings.WebGL.template              = "PROJECT:SpriteBakerDemo";
 
-                // Surface stack traces in the browser console for Error /
-                // Exception logs. WebGL Brotli builds default to "None"
-                // which prints a bare "NullReferenceException" with no
-                // location — useless for diagnosing runtime issues. Script-
-                // only traces add a few KB to the build's IL2CPP metadata.
+                // Full WebGL exception support with stack traces. Default
+                // is ExplicitlyThrownExceptionsOnly which strips implicit
+                // native NREs (e.g. Animator.Play on a null controller),
+                // leaving only the bare ThrowHelper line in the browser
+                // console. FullWithStacktrace inflates the IL2CPP build by
+                // ~1–3 MB but surfaces the actual file/line of every
+                // exception — required for diagnosing the WebGL boot path.
+                PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.FullWithStacktrace;
                 PlayerSettings.SetStackTraceLogType(LogType.Error,     StackTraceLogType.ScriptOnly);
                 PlayerSettings.SetStackTraceLogType(LogType.Exception, StackTraceLogType.ScriptOnly);
                 PlayerSettings.SetStackTraceLogType(LogType.Assert,    StackTraceLogType.ScriptOnly);

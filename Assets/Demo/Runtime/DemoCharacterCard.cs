@@ -153,6 +153,13 @@ namespace SpriteBakerDemo
             go.transform.localScale    = Vector3.one * DemoCharacterCatalog.LiveScale;
             _liveTransform = go.transform;
 
+            // Strip AudioListeners from the prefab copy. Kenney AC2 ships
+            // one on the rig root; with 4 cards plus the main camera we'd
+            // end up with 5 listeners, which Web Audio rejects on WebGL2
+            // (the editor only warns).
+            foreach (var al in go.GetComponentsInChildren<AudioListener>(true))
+                Destroy(al);
+
             foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 smr.updateWhenOffscreen = true;
 
