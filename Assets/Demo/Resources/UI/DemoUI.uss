@@ -1,0 +1,279 @@
+/* ============================================================================
+   DEMO LAYOUT OVERLAY
+   Screen-relative panel placement and a few overrides on top of the ds-*
+   design system. Loaded after DesignSystem.uss in DemoUI.uxml.
+   ============================================================================ */
+
+/* Transparent root so the 3D scene shows through. The .ds-root class
+   would otherwise paint var(--color-bg) and hide the camera. */
+.demo-root {
+    background-color: rgba(0,0,0,0);
+}
+
+.demo-panel {
+    position: absolute;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+/* Title block has no card surface — sits directly over the 3D scene as
+   floating text, mirroring the sibling unity-mesh-fracture demo. */
+.demo-title-block {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    max-width: 460px;
+}
+
+/* Credits row under the title. */
+.demo-credits {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-1);
+}
+/* `cursor: link` is valid CSS but Unity 6 emits a runtime warning
+   ("Runtime cursors other than the default cursor need to be defined
+   using a texture") on every UI tick because Unity's cursor system
+   requires an explicit Texture2D for non-default cursors. The colour
+   shift on :hover already signals clickability, so we leave the cursor
+   property unset on .demo-link.
+
+   The design system's Buttons.uss also sets `cursor: link` on .ds-btn —
+   we can't edit the submodule from this layer, but a higher-specificity
+   override under .demo-root resets it to the default cursor (which Unity
+   doesn't warn about). The override below silences the warning the user
+   was seeing on every panel repaint. */
+.demo-root .ds-btn {
+    cursor: arrow;
+}
+.demo-root .demo-link {
+    cursor: arrow;
+}
+.demo-link {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-body-2);
+    -unity-font-style: bold;
+    transition-property: color;
+    transition-duration: var(--transition-fast);
+}
+.demo-link:hover {
+    color: var(--color-primary);
+}
+.demo-credit-sep {
+    color: var(--color-text-disabled);
+    font-size: var(--font-size-body-2);
+    margin-left: var(--space-2);
+    margin-right: var(--space-2);
+}
+
+/* Animation row selector — top-center pill of three buttons. */
+.demo-row-selector {
+    position: absolute;
+    top: 16px;
+    align-self: center;
+    flex-direction: row;
+    align-items: center;
+}
+.demo-row-selector > .ds-btn {
+    margin-left: var(--space-1);
+    margin-right: var(--space-1);
+    min-width: 84px;
+}
+
+.demo-panel--instructions {
+    bottom: 16px;
+    left: 16px;
+    max-width: 300px;
+}
+
+.demo-panel--controls {
+    bottom: 16px;
+    right: 16px;
+    min-width: 260px;
+}
+
+/* Promo button row, top-right. */
+.demo-promo {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 360px;
+}
+.demo-promo > .ds-btn {
+    margin-left: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+/* Status toast, top-center but below the row selector. Hidden by default
+   (opacity 0); the C# layer adds .is-visible to fade it in, then schedules
+   removal after 1.5 s. */
+.demo-status {
+    position: absolute;
+    top: 70px;
+    align-self: center;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 240ms;
+}
+.demo-status.is-visible {
+    opacity: 1;
+}
+
+.demo-key-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--space-1);
+}
+.demo-key {
+    min-width: 100px;
+    color: var(--color-primary);
+    font-size: var(--font-size-body-2);
+    -unity-font-style: bold;
+    background-color: var(--color-surface-elev);
+    border-radius: var(--radius-sm);
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+    padding-top: 2px;
+    padding-bottom: 2px;
+    margin-right: var(--space-2);
+    -unity-text-align: middle-center;
+}
+.demo-key-desc {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-body-2);
+}
+
+/* Tighten the design system's .ds-section-label inside the demo panels. */
+.demo-panel .ds-section-label {
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-1);
+}
+
+/* Unity's USS subset for align-items only supports
+   flex-start | flex-end | center | stretch | auto.
+   `baseline` (valid CSS) parses but warns at panel build time and falls
+   back to flex-start, which leaves the value-label and the section-label
+   on different vertical positions. `center` matches the baseline visual
+   for single-line text on both sides of the row. */
+.demo-slider-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-1);
+}
+.demo-slider-header .ds-section-label {
+    margin: 0;
+}
+.demo-slider-value {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-body-1);
+    -unity-font-style: bold;
+}
+
+/* The design system's per-variant icon-tint cascade
+   (`.ds-btn--primary .ds-icon { tint: text-on-accent }`) doesn't carry a
+   :disabled override, so a disabled primary button's child icon would
+   render with the dark text-on-accent tint against the surface-elev
+   disabled background — barely visible. Re-tint to text-disabled. */
+.ds-btn:disabled .ds-icon {
+    -unity-background-image-tint-color: var(--color-text-disabled);
+}
+
+/* Mobile reflow. C# adds .mobile to the root below 768 CSS-px wide. */
+.mobile .demo-panel--instructions {
+    display: none;
+}
+
+.mobile .demo-panel--controls {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    min-width: auto;
+}
+
+/* Phone-class viewport: cap title width so it doesn't clip into the promo
+   row on the right. */
+.mobile .demo-title-block {
+    max-width: 60%;
+}
+
+/* Phone: row selector buttons get tighter to fit the top bar. */
+.mobile .demo-row-selector > .ds-btn {
+    min-width: 64px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+/* ============================================================================
+   ATLAS MODAL
+   Full-screen overlay shown when the user clicks a sprite quad. Backdrop
+   eats input behind it; the panel hosts a scrollable view of the baked
+   atlas + a meta footer.
+   ============================================================================ */
+.demo-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+}
+.demo-modal--hidden {
+    display: none;
+}
+.demo-modal__backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(8, 11, 18, 0.78);
+}
+.demo-modal__panel {
+    position: relative;
+    min-width: 360px;
+    max-width: 86%;
+    max-height: 86%;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    padding-left: 16px;
+    padding-right: 16px;
+    flex-direction: column;
+}
+.demo-modal__header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+.demo-modal__body {
+    /* ScrollView's content area; the ScrollView itself manages overflow. */
+    margin-top: var(--space-1);
+    margin-bottom: var(--space-1);
+}
+/* The atlas image's pixel dimensions (and thus aspect) are set in C#
+   based on the bound texture. Point-filtered + checker background so
+   transparent rows/columns read as "empty" not "black". */
+.demo-modal__atlas-image {
+    background-color: rgba(255, 255, 255, 0.04);
+    -unity-background-scale-mode: scale-to-fit;
+}
+.demo-modal__meta {
+    color: var(--color-text-secondary);
+    -unity-text-align: middle-left;
+    margin-top: var(--space-2);
+}
+
+.mobile .demo-modal__panel {
+    min-width: 0;
+    max-width: 92%;
+    max-height: 92%;
+}

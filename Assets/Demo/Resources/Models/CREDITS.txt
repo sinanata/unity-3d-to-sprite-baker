@@ -1,0 +1,25 @@
+Demo Asset Credits
+==================
+
+The 3D model + animations + skin textures in `Assets/Demo/Resources/Models/`
+are by Kenney (https://kenney.nl) and are licensed under
+Creative Commons Zero (CC0).
+
+  License text: https://creativecommons.org/publicdomain/zero/1.0/
+
+We're shipping them inside the demo so the WebGL preview works out of the
+box, but the canonical sources are at:
+
+  - kenney.nl/assets/animated-characters-2 (characterMedium.fbx,
+                                            idle / run / jump animations,
+                                            and the four skin PNGs:
+                                            criminalMaleA, skaterMaleA,
+                                            skaterFemaleA, cyborgFemaleA)
+
+Crediting Kenney isn't required by the licence, but we appreciate his
+work — these kits have been making the indie scene more legible for a
+decade.
+
+The sprite-baker engine itself is independent of these assets. You can
+delete `Assets/Demo/` entirely if you only want the runtime
+(`Assets/SpriteBaker/`).
