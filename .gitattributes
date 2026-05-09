@@ -1,7 +1,0 @@
-* text=auto eol=lf
-*.png binary
-*.jpg binary
-*.fbx binary
-*.unity merge=unityyamlmerge eol=lf
-*.asset merge=unityyamlmerge eol=lf
-*.prefab merge=unityyamlmerge eol=lf
