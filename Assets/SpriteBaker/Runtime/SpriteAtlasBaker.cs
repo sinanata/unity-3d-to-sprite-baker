@@ -250,14 +250,16 @@ namespace SpriteBaker
             // Pre-clear so unused row/column areas don't pick up RT garbage.
             atlas.SetPixels32(new Color32[atlasW * atlasH]);
 
-            // Synchronous Texture2D.ReadPixels per frame. AsyncGPUReadback's
-            // WaitForCompletion deadlocks WebGL2's single-threaded JS event
-            // loop (the GPU fence can't fire while the main thread is blocked
-            // sync-waiting on it), and on iOS/Metal some drivers return
-            // hasError on the first request after a fresh RT. Sync is slower
-            // by ~7–30 ms per frame on desktop, but for a one-time bake at
-            // scene load that's a few hundred ms total — invisible cost
-            // compared to the cross-platform reliability win.
+            // Async GPU readback — pose+render frame N, collect frame N-2.
+            // Cuts the per-frame stall from 7–30 ms (sync ReadPixels) to
+            // sub-millisecond. On WebGL2 the catch is that
+            // AsyncGPUReadbackRequest.WaitForCompletion deadlocks the
+            // single-threaded JS event loop (the GPU fence can't fire while
+            // the main thread is blocked sync-waiting on it). The final
+            // drain below yields between checks instead of sync-waiting,
+            // so WebGL completes the readbacks naturally over the next few
+            // frames.
+            var pendingReadbacks = new Queue<(int dstX, int dstY, AsyncGPUReadbackRequest req)>();
             var pixelBuffer = new Color32[px * px];
 
             var smr = model.GetComponentInChildren<SkinnedMeshRenderer>();
@@ -307,11 +309,27 @@ namespace SpriteBaker
                         int textureRow = rowSpec.Row * yawCount + yIdx;
                         int dstX = f * px;
                         int dstY = textureRow * px;
-                        ReadPixelsSync(rt, atlas, dstX, dstY, px, pixelBuffer);
+                        var rb = AsyncGPUReadback.Request(rt, 0);
+                        pendingReadbacks.Enqueue((dstX, dstY, rb));
+                        DrainReady(pendingReadbacks, atlas, px, pixelBuffer);
                     }
 
                     ApplyBlendShapes(smr, rowSpec.BlendShapes, weight: false);
                 }
+            }
+
+            // Final drain: yield each frame until the head of the queue is
+            // done, then drain all consecutively-ready ones. WebGL needs the
+            // event loop to advance for the GPU fence to fire, so we cannot
+            // call WaitForCompletion (deadlock).
+            while (pendingReadbacks.Count > 0)
+            {
+                if (!pendingReadbacks.Peek().req.done)
+                {
+                    yield return null;
+                    continue;
+                }
+                DrainReady(pendingReadbacks, atlas, px, pixelBuffer);
             }
 
             atlas.Apply(false, true); // makeNoLongerReadable: drop the CPU copy
@@ -447,21 +465,25 @@ namespace SpriteBaker
             }
         }
 
-        // Synchronously read the active RT into the atlas at (dstX, dstY).
-        // Texture2D.ReadPixels works on every platform (WebGL2 included),
-        // unlike AsyncGPUReadback which deadlocks WebGL's JS event loop on
-        // WaitForCompletion. The pixelBuffer arg is reserved for callers
-        // that need an intermediate Color32 copy; ReadPixels writes directly
-        // into the atlas's CPU side, so we don't actually need it here, but
-        // keeping the parameter avoids reallocating the array on each frame.
-        private static void ReadPixelsSync(
-            RenderTexture src, Texture2D atlas,
-            int dstX, int dstY, int px, Color32[] pixelBuffer)
+        // Drain every readback at the head of the queue that's already
+        // done. Doesn't yield, doesn't WaitForCompletion — caller is
+        // responsible for yielding between calls if it wants to give the
+        // GPU more time to complete in-flight requests. WebGL safety:
+        // never invokes WaitForCompletion, so the JS event loop never
+        // deadlocks against the GPU fence.
+        private static void DrainReady(
+            Queue<(int dstX, int dstY, AsyncGPUReadbackRequest req)> q,
+            Texture2D atlas, int px, Color32[] pixelBuffer)
         {
-            var prev = RenderTexture.active;
-            RenderTexture.active = src;
-            atlas.ReadPixels(new Rect(0, 0, px, px), dstX, dstY, recalculateMipMaps: false);
-            RenderTexture.active = prev;
+            while (q.Count > 0 && q.Peek().req.done)
+            {
+                var item = q.Dequeue();
+                if (item.req.hasError) continue;
+
+                var data = item.req.GetData<Color32>();
+                data.CopyTo(pixelBuffer);
+                atlas.SetPixels32(item.dstX, item.dstY, px, px, pixelBuffer);
+            }
         }
 
         // ── Lighting rig ─────────────────────────────────────────────────
