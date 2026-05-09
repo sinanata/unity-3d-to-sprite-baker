@@ -314,7 +314,7 @@ namespace SpriteBaker
 
                         req.PerFrameCallback?.Invoke(model);
 
-                        cam.Render();
+                        RenderBakeCamera(cam, rt);
 
                         int textureRow = rowSpec.Row * yawCount + yIdx;
                         int dstX = f * px;
@@ -385,6 +385,36 @@ namespace SpriteBaker
         }
 
         // ─── Helpers ─────────────────────────────────────────────────────
+
+        // URP's officially-supported synchronous render-to-texture entry
+        // point. Camera.Render() is NOT supported on URP — on Windows
+        // editor / D3D11 it happens to work via a legacy fallback, but on
+        // WebGL2 (and other strict-pipeline backends) it's a no-op: the
+        // bake camera is never traversed by URP, the RT keeps its prior
+        // contents, and the captured atlas is empty/black. UniversalRenderPipeline.SingleCameraRequest
+        // (Unity 2022.2+) drives the full URP pipeline against the bake
+        // camera and writes into `destination` synchronously, so the
+        // following AsyncGPUReadback.Request sees a freshly-rendered frame.
+        // SupportsRenderRequest gates the call so non-URP / Built-in users
+        // still get the legacy code path.
+        private static bool s_renderRequestUnsupportedLogged;
+        private static void RenderBakeCamera(Camera cam, RenderTexture rt)
+        {
+#if UNITY_RENDER_PIPELINE_UNIVERSAL
+            var request = new UniversalRenderPipeline.SingleCameraRequest { destination = rt };
+            if (RenderPipeline.SupportsRenderRequest(cam, request))
+            {
+                RenderPipeline.SubmitRenderRequest(cam, request);
+                return;
+            }
+            if (!s_renderRequestUnsupportedLogged)
+            {
+                s_renderRequestUnsupportedLogged = true;
+                Debug.LogWarning("[SpriteAtlasBaker] URP did not advertise SingleCameraRequest support; falling back to Camera.Render(). On WebGL2 this typically produces an empty atlas — confirm the Universal Render Pipeline asset is the active GraphicsSettings pipeline.");
+            }
+#endif
+            cam.Render();
+        }
 
         // Yaw 0° = camera on +Z looking -Z; clockwise around world Y.
         // Distance is fixed at 10 (orthographic — only affects near/far).
