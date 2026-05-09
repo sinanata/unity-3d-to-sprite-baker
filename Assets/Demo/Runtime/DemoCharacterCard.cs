@@ -190,12 +190,6 @@ namespace SpriteBakerDemo
 
             ApplyCharacterSkin(go, _skinTexture);
 
-            // Strip the FBX importer's auto-added Animator components.
-            // We don't use them — manual SampleAnimation in Update drives
-            // the rig — and leaving them on can race the manual sampling.
-            foreach (var a in go.GetComponentsInChildren<Animator>(true))
-                Destroy(a);
-
             // Resolve the SampleAnimation target. Kenney AC2 clips are
             // authored relative to the `Root` child; sampling against the
             // prefab root silently no-ops every curve binding.
@@ -203,6 +197,35 @@ namespace SpriteBakerDemo
             _liveSampleTarget = rigRoot != null ? rigRoot : go.transform;
             if (rigRoot == null)
                 Debug.LogWarning($"[SpriteBakerDemo] Could not find '{RIG_ROOT_BONE_PATH}' under {go.name} — sampling against prefab root. Curves bound relative to that path will not resolve and the live mesh will stay at bind pose.");
+
+            // Strip Animators from EVERY descendant EXCEPT the
+            // SampleAnimation target. Generic/Humanoid clips can't be
+            // sampled outside the editor without an Animator on the
+            // target GameObject (Unity warns and refuses the sample);
+            // a controller-less Animator is inert and just satisfies
+            // the API requirement. Stripping the others (FBX-importer
+            // auto-adds one on the prefab root) keeps any latent state
+            // machine logic from racing our manual sample.
+            foreach (var a in go.GetComponentsInChildren<Animator>(true))
+            {
+                if (a.gameObject == _liveSampleTarget.gameObject)
+                {
+                    a.runtimeAnimatorController = null;
+                    a.applyRootMotion = false;
+                    a.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                }
+                else
+                {
+                    Destroy(a);
+                }
+            }
+            if (_liveSampleTarget.gameObject.GetComponent<Animator>() == null)
+            {
+                var a = _liveSampleTarget.gameObject.AddComponent<Animator>();
+                a.runtimeAnimatorController = null;
+                a.applyRootMotion = false;
+                a.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            }
 
             // Land the first frame so the live mesh isn't bind-pose for a
             // single Update tick before our coroutine drives time forward.

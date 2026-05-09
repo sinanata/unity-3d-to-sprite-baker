@@ -136,18 +136,6 @@ namespace SpriteBaker
             }
             else if (req.Clips != null && req.Clips.Length > 0)
             {
-                // Strip every Animator's controller so they don't fight
-                // SampleAnimation between bake frames. Use GetComponentsInChildren
-                // — split rigs (Kenney AC2) place the Animator on a child
-                // bone-armature root, not the prefab root.
-                foreach (var a in model.GetComponentsInChildren<Animator>(true))
-                {
-                    a.runtimeAnimatorController = null;
-                    a.applyRootMotion = false;
-                    a.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-                }
-                animator = model.GetComponentInChildren<Animator>(true);
-
                 // Resolve the SampleAnimation target. Clips authored relative
                 // to a bone-armature root child (Kenney AC2's "Root", Mixamo's
                 // "Armature") need sampling against that child, not the
@@ -160,6 +148,35 @@ namespace SpriteBaker
                     if (t != null) sampleTarget = t.gameObject;
                     else Debug.LogWarning($"[SpriteAtlasBaker] SampleAnimationTargetPath='{req.SampleAnimationTargetPath}' not found under {model.name}; falling back to prefab root. Curves bound relative to that path will not resolve.");
                 }
+
+                // Strip every other Animator (controllers + components),
+                // leave a controller-less one on the SampleAnimation target.
+                // Generic/Humanoid clips can't be sampled outside the editor
+                // without an Animator on the target GameObject — Unity warns
+                // and refuses; a controller-less Animator is inert and just
+                // satisfies the API requirement.
+                foreach (var a in model.GetComponentsInChildren<Animator>(true))
+                {
+                    if (a.gameObject == sampleTarget)
+                    {
+                        a.runtimeAnimatorController = null;
+                        a.applyRootMotion = false;
+                        a.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    }
+                    else
+                    {
+                        Destroy(a);
+                    }
+                }
+                animator = sampleTarget.GetComponent<Animator>();
+                if (animator == null)
+                {
+                    animator = sampleTarget.AddComponent<Animator>();
+                    animator.runtimeAnimatorController = null;
+                    animator.applyRootMotion = false;
+                    animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                }
+
                 sampler = SamplerFromClips(sampleTarget, req.Clips, req.Rows);
                 yield return null;
             }
