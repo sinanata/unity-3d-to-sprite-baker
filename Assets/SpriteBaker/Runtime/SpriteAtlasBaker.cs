@@ -440,7 +440,15 @@ namespace SpriteBaker
             var map = new Dictionary<string, AnimationClip>();
             if (animator?.runtimeAnimatorController == null) return map;
             foreach (var clip in animator.runtimeAnimatorController.animationClips)
+            {
+                // WebGL builds occasionally surface null entries here when
+                // the controller references a clip the build pipeline
+                // dropped (e.g. an unused state's clip got stripped). The
+                // SampleAnimationSampler's loose-clip equivalent already
+                // null-checks; this path was the asymmetry.
+                if (clip == null) continue;
                 map[NormalizeClipName(clip.name)] = clip;
+            }
             return map;
         }
 
