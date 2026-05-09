@@ -108,6 +108,25 @@ namespace SpriteBaker
         /// Most callers leave this null.
         /// </summary>
         public Action<GameObject> PerFrameCallback;
+
+        /// <summary>
+        /// Optional Transform path under the instantiated prefab whose
+        /// GameObject is used as the AnimationClip.SampleAnimation target
+        /// for the loose-clip path. Only consulted when <see cref="Clips"/>
+        /// drives the bake (the AnimatorController path ignores this).
+        ///
+        /// Many rigs author clip curves relative to a bone-armature root
+        /// CHILD rather than the prefab root — Kenney AC2 in particular
+        /// stores curves with paths like <c>HipsCtrl/...</c> that are
+        /// expected to resolve relative to the <c>Root</c> child, not the
+        /// prefab root. Sampling against the prefab root in that case
+        /// silently no-ops every curve binding, leaving the captured atlas
+        /// at bind pose. Set this to <c>"Root"</c> for Kenney AC2 (or to
+        /// <c>"Armature"</c>/<c>"Hips"</c> for Mixamo). Leave null to
+        /// sample against the prefab root (the right target for FBXes
+        /// authored that way).
+        /// </summary>
+        public string SampleAnimationTargetPath;
     }
 
     /// <summary>

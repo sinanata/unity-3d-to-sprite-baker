@@ -32,8 +32,27 @@ namespace SpriteBakerDemo
         Transform                 _liveTransform;
         Collider                  _spriteCollider;
         Texture2D                 _skinTexture;
-        RuntimeAnimatorController _liveController;
-        Animator                  _liveAnimator;
+
+        // Clips loaded directly via Resources.LoadAll, NOT via the
+        // AnimatorController. The controller's serialized clip references
+        // are unreliable on WebGL builds: prior incident logs show
+        // animator.runtimeAnimatorController.animationClips returning
+        // entries that load as null even though the controller asset
+        // itself loads fine. Direct clip loading from FBX sub-assets
+        // (placed in a Resources folder, so Unity's build pipeline keeps
+        // them) sidesteps the issue. Both the live mesh AND the bake
+        // share the same clip references; controllers are no longer in
+        // the picture.
+        AnimationClip _idleClip;
+        AnimationClip _runClip;
+        AnimationClip _jumpClip;
+
+        // Manual SampleAnimation playback for the live mesh — the rig
+        // child whose transform path is what every clip's curves are
+        // bound relative to (Kenney AC2's `Root`).
+        Transform     _liveSampleTarget;
+        float         _liveAnimTime;
+
         int                       _bakeKey;
         int                       _bakedFrameSize;
         int                       _bakedFrameRate;
@@ -60,9 +79,15 @@ namespace SpriteBakerDemo
             if (_skinTexture == null)
                 Debug.LogWarning($"[SpriteBakerDemo] Missing skin texture at Resources/{def.SkinResourcePath} — character body will render with the default white texture.");
 
-            _liveController = Resources.Load<RuntimeAnimatorController>(DemoCharacterCatalog.ControllerPath);
-            if (_liveController == null)
-                Debug.LogWarning($"[SpriteBakerDemo] Missing AnimatorController at Resources/{DemoCharacterCatalog.ControllerPath} — live mesh will render in bind pose and bake will fall back to bind-pose frames. Run \"Sprite Baker Demo > Rebuild Kenney Controller\" to regenerate it.");
+            // Load AnimationClips directly from FBX sub-assets. Bypasses
+            // the AnimatorController, whose own clip references are
+            // unreliable on WebGL builds (load as null even when the
+            // controller itself loads).
+            _idleClip = DemoCharacterCatalog.LoadAnimationByKeyword(DemoCharacterCatalog.AnimIdlePath, "idle");
+            _runClip  = DemoCharacterCatalog.LoadAnimationByKeyword(DemoCharacterCatalog.AnimRunPath,  "run");
+            _jumpClip = DemoCharacterCatalog.LoadAnimationByKeyword(DemoCharacterCatalog.AnimJumpPath, "jump");
+            if (_idleClip == null || _runClip == null || _jumpClip == null)
+                Debug.LogWarning($"[SpriteBakerDemo] Missing one or more AnimationClips (idle={_idleClip != null}, run={_runClip != null}, jump={_jumpClip != null}) — characters will stay at bind pose.");
 
             BuildPedestal();
             BuildLiveCharacter();
@@ -84,7 +109,7 @@ namespace SpriteBakerDemo
         public void SetRow(int row)
         {
             _currentRow = row;
-            PlayLiveAnimatorRow(row);
+            _liveAnimTime = 0f;
             if (_spriteRenderer != null) _spriteRenderer.SetRow(row);
         }
 
@@ -165,73 +190,57 @@ namespace SpriteBakerDemo
 
             ApplyCharacterSkin(go, _skinTexture);
 
-            _liveAnimator = AttachAnimatorToRig(go);
-            if (_liveAnimator != null)
-            {
-                if (_liveController != null) _liveAnimator.runtimeAnimatorController = _liveController;
-                _liveAnimator.applyRootMotion = false;
-                _liveAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            }
+            // Strip the FBX importer's auto-added Animator components.
+            // We don't use them — manual SampleAnimation in Update drives
+            // the rig — and leaving them on can race the manual sampling.
+            foreach (var a in go.GetComponentsInChildren<Animator>(true))
+                Destroy(a);
 
-            PlayLiveAnimatorRow(_currentRow);
+            // Resolve the SampleAnimation target. Kenney AC2 clips are
+            // authored relative to the `Root` child; sampling against the
+            // prefab root silently no-ops every curve binding.
+            var rigRoot = go.transform.Find(RIG_ROOT_BONE_PATH);
+            _liveSampleTarget = rigRoot != null ? rigRoot : go.transform;
+            if (rigRoot == null)
+                Debug.LogWarning($"[SpriteBakerDemo] Could not find '{RIG_ROOT_BONE_PATH}' under {go.name} — sampling against prefab root. Curves bound relative to that path will not resolve and the live mesh will stay at bind pose.");
+
+            // Land the first frame so the live mesh isn't bind-pose for a
+            // single Update tick before our coroutine drives time forward.
+            ApplyLiveSamplePose(0f);
         }
 
-        // Attach the Animator to the bone-armature root, not the prefab
-        // root (see type-level XML doc).
-        public static Animator AttachAnimatorToRig(GameObject prefabInstance)
+        AnimationClip CurrentClip()
         {
-            var rigRoot = prefabInstance.transform.Find(RIG_ROOT_BONE_PATH);
-            GameObject animatorHost;
-            if (rigRoot != null)
+            switch (_currentRow)
             {
-                // Strip the FBX importer's auto-added Animator on the
-                // prefab root so two animators don't race on the same rig.
-                var stray = prefabInstance.GetComponent<Animator>();
-                if (stray != null) Object.Destroy(stray);
-                animatorHost = rigRoot.gameObject;
+                case DemoCharacterCatalog.RowRun:  return _runClip;
+                case DemoCharacterCatalog.RowJump: return _jumpClip;
+                default:                            return _idleClip;
             }
-            else
-            {
-                Debug.LogWarning($"[SpriteBakerDemo] Could not find '{RIG_ROOT_BONE_PATH}' under {prefabInstance.name} — attaching Animator to the prefab root. Hierarchy may have been refactored; update RIG_ROOT_BONE_PATH.");
-                animatorHost = prefabInstance;
-            }
-
-            var animator = animatorHost.GetComponent<Animator>();
-            if (animator == null) animator = animatorHost.AddComponent<Animator>();
-            return animator;
         }
 
-        void PlayLiveAnimatorRow(int row)
+        void ApplyLiveSamplePose(float t)
         {
-            if (_liveAnimator == null) return;
-            string state = StateNameForRow(row);
-            _liveAnimator.Play(state, 0, 0f);
-            _liveAnimator.Update(0f);
+            if (_liveSampleTarget == null) return;
+            var clip = CurrentClip();
+            if (clip == null) return;
+            clip.SampleAnimation(_liveSampleTarget.gameObject, t);
         }
 
-        // Loop fallback for the case where the importer hasn't applied
-        // loopTime yet (cached FBX with stale settings). Gated on
-        // !info.loop because a properly-looping state's normalizedTime
-        // grows past 1.0 by design — restarting in that case would stutter.
         void Update()
         {
-            if (_liveAnimator == null) return;
-            if (_liveAnimator.runtimeAnimatorController == null) return;
+            if (_liveSampleTarget == null) return;
+            var clip = CurrentClip();
+            if (clip == null) return;
 
-            var info = _liveAnimator.GetCurrentAnimatorStateInfo(0);
-            if (!info.loop && info.normalizedTime >= 1f)
-                _liveAnimator.Play(StateNameForRow(_currentRow), 0, 0f);
-        }
+            _liveAnimTime += Time.deltaTime;
+            float len = clip.length > 0f ? clip.length : 1f;
+            if (clip.isLooping || (clip.wrapMode == WrapMode.Loop || clip.wrapMode == WrapMode.Default))
+                _liveAnimTime %= len;
+            else if (_liveAnimTime > len)
+                _liveAnimTime = len;
 
-        static string StateNameForRow(int row)
-        {
-            switch (row)
-            {
-                case DemoCharacterCatalog.RowIdle: return "idle";
-                case DemoCharacterCatalog.RowRun:  return "run";
-                case DemoCharacterCatalog.RowJump: return "jump";
-                default:                            return "idle";
-            }
+            ApplyLiveSamplePose(_liveAnimTime);
         }
 
         void BuildSpritePlayback()
@@ -304,13 +313,30 @@ namespace SpriteBakerDemo
             if (prefab == null) return;
 
             var skinTex = _skinTexture;
-            var controller = _liveController;
+
+            // Pass loose clips, NOT a controller. On WebGL builds, the
+            // controller's animationClips array can deserialize with null
+            // entries, so the bake's clip-name resolution silently produces
+            // a clip-less sampler and every captured frame is bind pose.
+            // Direct AnimationClip references via Resources.LoadAll bypass
+            // that — the FBX sub-assets are kept by the build pipeline
+            // because we hold strong references to them.
+            var clips = new System.Collections.Generic.List<AnimationClip>(3);
+            if (_idleClip != null) clips.Add(_idleClip);
+            if (_runClip  != null) clips.Add(_runClip);
+            if (_jumpClip != null) clips.Add(_jumpClip);
+
+            string idleName = _idleClip != null ? _idleClip.name : "idle";
+            string runName  = _runClip  != null ? _runClip.name  : "run";
+            string jumpName = _jumpClip != null ? _jumpClip.name : "jump";
 
             SpriteAtlasBaker.Instance.Enqueue(new SpriteBakeRequest
             {
                 Key = _bakeKey,
                 Prefab = prefab,
-                AnimatorController = controller,
+                AnimatorController = null,
+                Clips = clips.ToArray(),
+                SampleAnimationTargetPath = RIG_ROOT_BONE_PATH,
                 FramePixelSize = size,
                 FrameRate = rate,
                 CaptureYawCount = yaws,
@@ -319,16 +345,14 @@ namespace SpriteBakerDemo
                 {
                     // Jump's static landed-pose tail is trimmed in the
                     // importer so this loop wraps cleanly.
-                    new SpriteAnimRow { Row = DemoCharacterCatalog.RowIdle, ClipName = "idle", Loop = true },
-                    new SpriteAnimRow { Row = DemoCharacterCatalog.RowRun,  ClipName = "run",  Loop = true },
-                    new SpriteAnimRow { Row = DemoCharacterCatalog.RowJump, ClipName = "jump", Loop = true },
+                    new SpriteAnimRow { Row = DemoCharacterCatalog.RowIdle, ClipName = idleName, Loop = true },
+                    new SpriteAnimRow { Row = DemoCharacterCatalog.RowRun,  ClipName = runName,  Loop = true },
+                    new SpriteAnimRow { Row = DemoCharacterCatalog.RowJump, ClipName = jumpName, Loop = true },
                 },
                 PreCaptureCallback = inst =>
                 {
                     inst.transform.localScale = Vector3.one * DemoCharacterCatalog.LiveScale;
                     ApplyCharacterSkin(inst, skinTex, forBake: true);
-                    // Move Animator before the baker's SetupAnimator runs.
-                    AttachAnimatorToRig(inst);
                 },
             });
         }

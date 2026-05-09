@@ -136,16 +136,31 @@ namespace SpriteBaker
             }
             else if (req.Clips != null && req.Clips.Length > 0)
             {
-                // Strip the auto-added Animator's controller so it doesn't
-                // fight SampleAnimation between bake frames.
-                animator = model.GetComponent<Animator>();
-                if (animator != null)
+                // Strip every Animator's controller so they don't fight
+                // SampleAnimation between bake frames. Use GetComponentsInChildren
+                // — split rigs (Kenney AC2) place the Animator on a child
+                // bone-armature root, not the prefab root.
+                foreach (var a in model.GetComponentsInChildren<Animator>(true))
                 {
-                    animator.runtimeAnimatorController = null;
-                    animator.applyRootMotion = false;
-                    animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    a.runtimeAnimatorController = null;
+                    a.applyRootMotion = false;
+                    a.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                 }
-                sampler = SamplerFromClips(model, req.Clips, req.Rows);
+                animator = model.GetComponentInChildren<Animator>(true);
+
+                // Resolve the SampleAnimation target. Clips authored relative
+                // to a bone-armature root child (Kenney AC2's "Root", Mixamo's
+                // "Armature") need sampling against that child, not the
+                // prefab root, or every curve binding silently no-ops and
+                // the bake captures bind pose.
+                GameObject sampleTarget = model;
+                if (!string.IsNullOrEmpty(req.SampleAnimationTargetPath))
+                {
+                    var t = model.transform.Find(req.SampleAnimationTargetPath);
+                    if (t != null) sampleTarget = t.gameObject;
+                    else Debug.LogWarning($"[SpriteAtlasBaker] SampleAnimationTargetPath='{req.SampleAnimationTargetPath}' not found under {model.name}; falling back to prefab root. Curves bound relative to that path will not resolve.");
+                }
+                sampler = SamplerFromClips(sampleTarget, req.Clips, req.Rows);
                 yield return null;
             }
             else
