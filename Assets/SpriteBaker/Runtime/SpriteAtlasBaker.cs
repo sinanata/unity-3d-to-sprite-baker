@@ -314,6 +314,22 @@ namespace SpriteBaker
 
                         req.PerFrameCallback?.Invoke(model);
 
+                        // Re-assert the requested pose right before render.
+                        // Coroutine resumes in the next frame's Update phase;
+                        // by that point Unity's LateUpdate-cycle animator
+                        // pass has already run once and may have overwritten
+                        // our SampleFrame state for samplers other than the
+                        // Animator path. Calling Update(0f) on an Animator
+                        // with speed=0 is idempotent + cheap, and forces the
+                        // bones into the SampleFrame pose for SubmitRenderRequest
+                        // to pick up. (Without this, on URP+WebGL the bake
+                        // can capture frame 0 of the prior state for every
+                        // sample, producing identical rows — UI row switches
+                        // appear inert because each row's content is the
+                        // same idle pose.)
+                        if (animator != null && animator.runtimeAnimatorController != null)
+                            animator.Update(0f);
+
                         RenderBakeCamera(cam, rt);
 
                         int textureRow = rowSpec.Row * yawCount + yIdx;
