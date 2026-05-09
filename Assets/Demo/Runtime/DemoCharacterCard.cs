@@ -252,9 +252,17 @@ namespace SpriteBakerDemo
             _spriteCollider = col;
         }
 
-        static void ApplyCharacterSkin(GameObject root, Texture2D skin)
+        // forBake=true uses an Unlit material so the offscreen capture
+        // stage produces a clean texture-only atlas (predictable on
+        // WebGL2 where URP/Lit on an offscreen camera can render solid
+        // black — light contribution drops to zero through stripped
+        // lighting passes). The live mesh keeps the lit material so the
+        // 3D-shaded vs sprite-flat contrast still reads on screen.
+        static void ApplyCharacterSkin(GameObject root, Texture2D skin, bool forBake = false)
         {
-            var mat = MaterialFactory.CharacterBodyMaterial(skin);
+            var mat = forBake
+                ? MaterialFactory.CharacterBodyMaterialUnlit(skin)
+                : MaterialFactory.CharacterBodyMaterial(skin);
 
             foreach (var smr in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
@@ -318,7 +326,7 @@ namespace SpriteBakerDemo
                 PreCaptureCallback = inst =>
                 {
                     inst.transform.localScale = Vector3.one * DemoCharacterCatalog.LiveScale;
-                    ApplyCharacterSkin(inst, skinTex);
+                    ApplyCharacterSkin(inst, skinTex, forBake: true);
                     // Move Animator before the baker's SetupAnimator runs.
                     AttachAnimatorToRig(inst);
                 },

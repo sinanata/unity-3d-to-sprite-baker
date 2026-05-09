@@ -542,6 +542,15 @@ namespace SpriteBaker
             light.intensity = intensity > 0f ? intensity : 1f;
             light.shadows = LightShadows.None;
             light.cullingMask = ~0;
+            // URP requires this companion component to track per-light data
+            // (additional shadow flags, light layer mask, soft-shadow params).
+            // Without it, WebGL's URP forward pipeline silently drops the
+            // light from its main-light + additional-lights buffers, and
+            // URP/Lit characters render as black silhouettes on the
+            // offscreen capture stage.
+#if UNITY_RENDER_PIPELINE_UNIVERSAL
+            go.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+#endif
         }
 
         // ── Frame samplers ───────────────────────────────────────────────

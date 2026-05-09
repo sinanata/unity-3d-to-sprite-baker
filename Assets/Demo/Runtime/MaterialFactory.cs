@@ -69,6 +69,45 @@ namespace SpriteBakerDemo
             return mat;
         }
 
+        /// <summary>
+        /// URP/Unlit body material for the offscreen capture stage. Bakes
+        /// the skin texture without any lighting term so the atlas is a
+        /// clean texture-only render — predictable across platforms (WebGL2
+        /// in particular is brittle when URP/Lit runs against an offscreen
+        /// camera with shader-stripped lighting passes) and conceptually
+        /// correct: a sprite atlas shouldn't double-bake lighting that the
+        /// runtime sprite shader doesn't apply anyway.
+        /// </summary>
+        public static Material CharacterBodyMaterialUnlit(Texture2D skin)
+        {
+            var shader = Shader.Find(UNLIT_SHADER) ?? Shader.Find(LIT_SHADER);
+            if (shader == null)
+            {
+                Debug.LogError($"[SpriteBakerDemo] {UNLIT_SHADER} shader not found; falling back to lit (atlas may be black on WebGL).");
+                return CharacterBodyMaterial(skin);
+            }
+            var mat = new Material(shader);
+            mat.name = skin != null ? $"BodyUnlit_{skin.name}" : "BodyUnlit";
+
+            // _BaseColor white so the texture sampling result isn't tinted
+            // dark. Default URP/Unlit's _BaseColor is white but a runtime-
+            // created instance occasionally lands at black; explicit set is
+            // a one-line guarantee.
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+
+            if (skin != null)
+            {
+                mat.SetTexture("_BaseMap", skin);
+                skin.filterMode = FilterMode.Bilinear;
+            }
+            else
+            {
+                mat.SetTexture("_BaseMap", Texture2D.whiteTexture);
+            }
+            mat.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
+            return mat;
+        }
+
         /// <summary>Hat / accessory material; not currently used.</summary>
         public static Material CharacterAccessoryMaterial(Color tint)
         {
