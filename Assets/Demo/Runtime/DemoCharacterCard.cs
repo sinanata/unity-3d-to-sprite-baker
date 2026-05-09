@@ -57,6 +57,7 @@ namespace SpriteBakerDemo
         int                       _bakedFrameSize;
         int                       _bakedFrameRate;
         int                       _bakedYawCount;
+        bool                      _bakedBodyLit;
         int                       _currentRow = DemoCharacterCatalog.RowIdle;
 
         public int BakeKey => _bakeKey;
@@ -97,10 +98,12 @@ namespace SpriteBakerDemo
 
         public void OnQualitySettingsChanged()
         {
-            int newSize = _bootstrap.FramePixelSize;
-            int newRate = _bootstrap.FrameRate;
-            int newYaw  = _bootstrap.YawCount;
-            if (newSize == _bakedFrameSize && newRate == _bakedFrameRate && newYaw == _bakedYawCount) return;
+            int  newSize = _bootstrap.FramePixelSize;
+            int  newRate = _bootstrap.FrameRate;
+            int  newYaw  = _bootstrap.YawCount;
+            bool newLit  = _bootstrap.BodyBakeLit;
+            if (newSize == _bakedFrameSize && newRate == _bakedFrameRate
+                && newYaw == _bakedYawCount && newLit == _bakedBodyLit) return;
 
             SpriteAtlasCache.Evict(_bakeKey);
             BakeIfNeeded();
@@ -284,17 +287,22 @@ namespace SpriteBakerDemo
             _spriteCollider = col;
         }
 
-        // forBake=true uses an Unlit material so the offscreen capture
-        // stage produces a clean texture-only atlas (predictable on
-        // WebGL2 where URP/Lit on an offscreen camera can render solid
-        // black — light contribution drops to zero through stripped
-        // lighting passes). The live mesh keeps the lit material so the
-        // 3D-shaded vs sprite-flat contrast still reads on screen.
-        static void ApplyCharacterSkin(GameObject root, Texture2D skin, bool forBake = false)
+        // The live mesh always uses the URP/Lit body so it shades against
+        // the scene's sun and reads as a 3D character. The bake stage can
+        // pick either: Lit captures the model under the CaptureLighting
+        // rig (key + fill + ambient), so the atlas pixels carry baked
+        // shading; Unlit captures pure texture with no lighting term, a
+        // safer fallback for projects that hit WebGL2 stripping issues
+        // with URP/Lit on offscreen cameras. Toggle is exposed in the
+        // demo UI; default is Lit.
+        static void ApplyCharacterSkin(GameObject root, Texture2D skin, bool forBake = false, bool litForBake = true)
         {
-            var mat = forBake
-                ? MaterialFactory.CharacterBodyMaterialUnlit(skin)
-                : MaterialFactory.CharacterBodyMaterial(skin);
+            Material mat;
+            if (forBake)
+                mat = litForBake ? MaterialFactory.CharacterBodyMaterial(skin)
+                                 : MaterialFactory.CharacterBodyMaterialUnlit(skin);
+            else
+                mat = MaterialFactory.CharacterBodyMaterial(skin);
 
             foreach (var smr in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
@@ -316,13 +324,15 @@ namespace SpriteBakerDemo
 
         void BakeIfNeeded()
         {
-            int size = _bootstrap.FramePixelSize;
-            int rate = _bootstrap.FrameRate;
-            int yaws = _bootstrap.YawCount;
+            int  size = _bootstrap.FramePixelSize;
+            int  rate = _bootstrap.FrameRate;
+            int  yaws = _bootstrap.YawCount;
+            bool lit  = _bootstrap.BodyBakeLit;
             _bakedFrameSize = size;
             _bakedFrameRate = rate;
             _bakedYawCount  = yaws;
-            _bakeKey = DemoCharacterCatalog.BuildBakeKey(Definition, size, rate, yaws);
+            _bakedBodyLit   = lit;
+            _bakeKey = DemoCharacterCatalog.BuildBakeKey(Definition, size, rate, yaws, lit);
 
             if (_spriteRenderer != null)
             {
@@ -375,7 +385,7 @@ namespace SpriteBakerDemo
                 PreCaptureCallback = inst =>
                 {
                     inst.transform.localScale = Vector3.one * DemoCharacterCatalog.LiveScale;
-                    ApplyCharacterSkin(inst, skinTex, forBake: true);
+                    ApplyCharacterSkin(inst, skinTex, forBake: true, litForBake: lit);
                 },
             });
         }

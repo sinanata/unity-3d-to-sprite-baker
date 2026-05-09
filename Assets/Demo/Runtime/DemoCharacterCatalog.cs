@@ -73,9 +73,9 @@ namespace SpriteBakerDemo
         /// <summary>
         /// Content-derived bake key — stable across editor reloads, so
         /// re-entering Play mode reuses the cached atlas. Distinct per
-        /// (skin × frame size × FPS × yaw count).
+        /// (skin × frame size × FPS × yaw count × body lit/unlit).
         /// </summary>
-        public static int BuildBakeKey(Definition def, int framePixelSize, int frameRate, int yawCount)
+        public static int BuildBakeKey(Definition def, int framePixelSize, int frameRate, int yawCount, bool bodyLit)
         {
             unchecked
             {
@@ -84,6 +84,7 @@ namespace SpriteBakerDemo
                 h = h * 31 + framePixelSize;
                 h = h * 31 + frameRate;
                 h = h * 31 + yawCount;
+                h = h * 31 + (bodyLit ? 1 : 0);
                 return h;
             }
         }

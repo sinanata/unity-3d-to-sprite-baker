@@ -83,6 +83,21 @@
     min-width: 84px;
 }
 
+/* Inline variant — sits inside a panel under a section header instead of
+   floating absolutely at the top of the screen. Body Material toggle uses
+   this. */
+.demo-row-selector--inline {
+    position: relative;
+    top: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+}
+.demo-row-selector--inline > .ds-btn {
+    min-width: 0;
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
 .demo-panel--instructions {
     bottom: 16px;
     left: 16px;
@@ -186,7 +201,11 @@
     -unity-background-image-tint-color: var(--color-text-disabled);
 }
 
-/* Mobile reflow. C# adds .mobile to the root below 768 CSS-px wide. */
+/* Mobile reflow. C# adds .mobile to the root below 768 CSS-px wide.
+   Top of the screen is too narrow on phones to absolutely-position the
+   title, the Idle/Run/Jump pill, and the GitHub button at the same
+   y=16px row — they collide. Drop all three back into the document
+   flow so they stack vertically. */
 .mobile .demo-panel--instructions {
     display: none;
 }
@@ -198,17 +217,51 @@
     min-width: auto;
 }
 
-/* Phone-class viewport: cap title width so it doesn't clip into the promo
-   row on the right. */
 .mobile .demo-title-block {
-    max-width: 60%;
+    max-width: none;
+    margin-left: 12px;
+    margin-right: 12px;
 }
 
-/* Phone: row selector buttons get tighter to fit the top bar. */
+.mobile .demo-row-selector {
+    position: relative;
+    top: auto;
+    align-self: center;
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-2);
+    flex-wrap: wrap;
+    justify-content: center;
+}
 .mobile .demo-row-selector > .ds-btn {
-    min-width: 64px;
-    margin-left: 2px;
-    margin-right: 2px;
+    min-width: 88px;
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.mobile .demo-promo {
+    position: relative;
+    top: auto;
+    right: auto;
+    align-self: flex-start;
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-bottom: var(--space-2);
+    max-width: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+.mobile .demo-promo > .ds-btn {
+    margin-left: 0;
+    margin-right: var(--space-2);
+}
+
+/* Status toast was anchored to top: 70px so it cleared the absolutely
+   positioned row selector. With the row selector now in normal flow on
+   mobile, drop the toast lower so it doesn't sit on top of the title. */
+.mobile .demo-status {
+    top: auto;
+    bottom: 220px;
 }
 
 /* ============================================================================

@@ -75,6 +75,15 @@ namespace SpriteBakerDemo
         public int YawCount       = DemoCharacterCatalog.YawCount;
         public int CurrentRow     = DemoCharacterCatalog.RowIdle;
 
+        // Body material used during the offscreen bake.
+        // Lit = URP/Lit; the bake camera's CaptureLighting rig (key + fill +
+        // ambient) shades the model so the atlas carries 3D-looking pixel
+        // art. Unlit = URP/Unlit; bakes a flat texture-only render. Lit is
+        // the default because it produces nicer-looking sprites; Unlit is
+        // available as a fallback in case a project hits a WebGL2
+        // shader-stripping issue with URP/Lit on offscreen cameras.
+        public bool BodyBakeLit = true;
+
         public IReadOnlyList<DemoCharacterCard> Cards => _cards;
 
         void Start()
@@ -383,6 +392,13 @@ namespace SpriteBakerDemo
         public void SetYawCount(int count)
         {
             YawCount = Mathf.Clamp(count, 1, 16);
+            foreach (var c in _cards) c.OnQualitySettingsChanged();
+        }
+
+        public void SetBodyBakeLit(bool lit)
+        {
+            if (BodyBakeLit == lit) return;
+            BodyBakeLit = lit;
             foreach (var c in _cards) c.OnQualitySettingsChanged();
         }
 

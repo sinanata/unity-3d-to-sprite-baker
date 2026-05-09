@@ -43,6 +43,8 @@ namespace SpriteBakerDemo
         Button _btnIdle;
         Button _btnRun;
         Button _btnJump;
+        Button _btnBodyLit;
+        Button _btnBodyUnlit;
         Label  _frameSizeValue;
         Label  _frameRateValue;
         Label  _yawCountValue;
@@ -118,6 +120,8 @@ namespace SpriteBakerDemo
             _btnIdle           = _root.Q<Button>("btn-idle");
             _btnRun            = _root.Q<Button>("btn-run");
             _btnJump           = _root.Q<Button>("btn-jump");
+            _btnBodyLit        = _root.Q<Button>("btn-body-lit");
+            _btnBodyUnlit      = _root.Q<Button>("btn-body-unlit");
 
             _atlasModal         = _root.Q<VisualElement>("atlas-modal");
             _atlasModalImage    = _root.Q<VisualElement>("atlas-modal-image");
@@ -147,6 +151,7 @@ namespace SpriteBakerDemo
             }
 
             UpdateRowButtonHighlight();
+            UpdateBodyButtonHighlight();
         }
 
         void BindPromoLinks()
@@ -205,6 +210,11 @@ namespace SpriteBakerDemo
                     ShowStatus($"Frame rate: {evt.newValue} fps (re-baking)", spinning: true);
                 });
             }
+
+            if (_btnBodyLit != null)
+                _btnBodyLit.clicked += () => OnBodyMaterialClicked(true);
+            if (_btnBodyUnlit != null)
+                _btnBodyUnlit.clicked += () => OnBodyMaterialClicked(false);
 
             // Snapped to {1, 4, 8, 16}. Atlas + bake time scale linearly.
             _yawCountSlider = _root.Q<SliderInt>("yaw-count-slider");
@@ -340,6 +350,24 @@ namespace SpriteBakerDemo
             ToggleClass(_btnJump, "ds-btn--ghost",  !(_bootstrap.CurrentRow == DemoCharacterCatalog.RowJump));
         }
 
+        void OnBodyMaterialClicked(bool lit)
+        {
+            if (_bootstrap == null) return;
+            if (_bootstrap.BodyBakeLit == lit) return;
+            _bootstrap.SetBodyBakeLit(lit);
+            UpdateBodyButtonHighlight();
+            ShowStatus($"Body material: {(lit ? "Lit" : "Unlit")} (re-baking)", spinning: true);
+        }
+
+        void UpdateBodyButtonHighlight()
+        {
+            bool lit = _bootstrap != null && _bootstrap.BodyBakeLit;
+            ToggleClass(_btnBodyLit,   "ds-btn--primary",  lit);
+            ToggleClass(_btnBodyLit,   "ds-btn--ghost",   !lit);
+            ToggleClass(_btnBodyUnlit, "ds-btn--primary", !lit);
+            ToggleClass(_btnBodyUnlit, "ds-btn--ghost",    lit);
+        }
+
         // Snap to a discrete set so atlas widths stay clean.
         static int SnapToPowerOfTwo(int value, int min, int max)
         {
@@ -403,6 +431,8 @@ namespace SpriteBakerDemo
             if (_frameSizeSlider != null) _frameSizeSlider.SetEnabled(enabled);
             if (_frameRateSlider != null) _frameRateSlider.SetEnabled(enabled);
             if (_yawCountSlider  != null) _yawCountSlider.SetEnabled(enabled);
+            if (_btnBodyLit      != null) _btnBodyLit.SetEnabled(enabled);
+            if (_btnBodyUnlit    != null) _btnBodyUnlit.SetEnabled(enabled);
         }
 
         static void ToggleClass(VisualElement el, string cls, bool on)

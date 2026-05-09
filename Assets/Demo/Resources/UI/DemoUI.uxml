@@ -69,6 +69,14 @@
                 <ui:Label name="yaw-count-value" text="8" class="demo-slider-value" />
             </ui:VisualElement>
             <ui:SliderInt name="yaw-count-slider" low-value="1" high-value="16" class="ds-slider" />
+
+            <ui:VisualElement class="demo-slider-header">
+                <ui:Label text="BODY MATERIAL" class="ds-section-label" />
+            </ui:VisualElement>
+            <ui:VisualElement class="demo-row-selector demo-row-selector--inline">
+                <ui:Button name="btn-body-lit"   text="Lit"   class="ds-btn ds-btn--sm ds-btn--primary" />
+                <ui:Button name="btn-body-unlit" text="Unlit" class="ds-btn ds-btn--sm ds-btn--ghost" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <ui:VisualElement name="status" class="ds-toast ds-toast--info demo-status" picking-mode="Ignore">
