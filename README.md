@@ -33,6 +33,8 @@ host.AddComponent<AnimatedSpriteRenderer>().Bind(id);
 
 **[▶ Live WebGL preview](https://sinanata.github.io/unity-3d-to-sprite-baker/)** — four side-by-side cards, each splitting **live 3D character** (left) vs **baked sprite playback** (right). Click Idle / Run / Jump in the top bar to flip every card's animation simultaneously; tweak Frame Size / Frame Rate sliders to re-bake at different qualities and watch the atlas update.
 
+[![Unity 3D-to-Sprite Baker — interactive WebGL preview. Four side-by-side cards split live 3D character (left) vs baked sprite playback (right); click Idle / Run / Jump to flip animations and drag the Frame Size / Frame Rate sliders to re-bake at different qualities.](docs/screenshots/sprite_baker_showcase.gif)](https://sinanata.github.io/unity-3d-to-sprite-baker/)
+
 The repo is a complete Unity project — clone, open in Unity 6, press Play. The demo scene auto-spawns:
 
 - 4 [Kenney animated-characters-2](https://kenney.nl/assets/animated-characters-2) skin variants on the same rig (skater male / skater female / criminal / cyborg). Each card stages the live SkinnedMeshRenderer + the baked sprite playback at the same world position so the silhouette parity is visible at a glance.
