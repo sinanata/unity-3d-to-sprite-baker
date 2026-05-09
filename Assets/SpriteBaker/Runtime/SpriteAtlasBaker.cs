@@ -250,9 +250,14 @@ namespace SpriteBaker
             // Pre-clear so unused row/column areas don't pick up RT garbage.
             atlas.SetPixels32(new Color32[atlasW * atlasH]);
 
-            // Pipelined readback: pose+render frame N, collect frame N-2.
-            // Without async readback the per-frame stall is 7-30 ms.
-            var pendingReadbacks = new Queue<(int dstX, int dstY, AsyncGPUReadbackRequest req)>();
+            // Synchronous Texture2D.ReadPixels per frame. AsyncGPUReadback's
+            // WaitForCompletion deadlocks WebGL2's single-threaded JS event
+            // loop (the GPU fence can't fire while the main thread is blocked
+            // sync-waiting on it), and on iOS/Metal some drivers return
+            // hasError on the first request after a fresh RT. Sync is slower
+            // by ~7–30 ms per frame on desktop, but for a one-time bake at
+            // scene load that's a few hundred ms total — invisible cost
+            // compared to the cross-platform reliability win.
             var pixelBuffer = new Color32[px * px];
 
             var smr = model.GetComponentInChildren<SkinnedMeshRenderer>();
@@ -302,16 +307,13 @@ namespace SpriteBaker
                         int textureRow = rowSpec.Row * yawCount + yIdx;
                         int dstX = f * px;
                         int dstY = textureRow * px;
-                        var rb = AsyncGPUReadback.Request(rt, 0);
-                        pendingReadbacks.Enqueue((dstX, dstY, rb));
-                        DrainReadbacks(pendingReadbacks, atlas, px, pixelBuffer, waitAll: false);
+                        ReadPixelsSync(rt, atlas, dstX, dstY, px, pixelBuffer);
                     }
 
                     ApplyBlendShapes(smr, rowSpec.BlendShapes, weight: false);
                 }
             }
 
-            DrainReadbacks(pendingReadbacks, atlas, px, pixelBuffer, waitAll: true);
             atlas.Apply(false, true); // makeNoLongerReadable: drop the CPU copy
 
             cam.targetTexture = null;
@@ -445,22 +447,21 @@ namespace SpriteBaker
             }
         }
 
-        private static void DrainReadbacks(
-            Queue<(int dstX, int dstY, AsyncGPUReadbackRequest req)> q,
-            Texture2D atlas, int px, Color32[] pixelBuffer, bool waitAll)
+        // Synchronously read the active RT into the atlas at (dstX, dstY).
+        // Texture2D.ReadPixels works on every platform (WebGL2 included),
+        // unlike AsyncGPUReadback which deadlocks WebGL's JS event loop on
+        // WaitForCompletion. The pixelBuffer arg is reserved for callers
+        // that need an intermediate Color32 copy; ReadPixels writes directly
+        // into the atlas's CPU side, so we don't actually need it here, but
+        // keeping the parameter avoids reallocating the array on each frame.
+        private static void ReadPixelsSync(
+            RenderTexture src, Texture2D atlas,
+            int dstX, int dstY, int px, Color32[] pixelBuffer)
         {
-            while (q.Count > 0)
-            {
-                var item = q.Peek();
-                if (!item.req.done && !waitAll) break;
-                if (!item.req.done) item.req.WaitForCompletion();
-                q.Dequeue();
-                if (item.req.hasError) continue;
-
-                var data = item.req.GetData<Color32>();
-                data.CopyTo(pixelBuffer);
-                atlas.SetPixels32(item.dstX, item.dstY, px, px, pixelBuffer);
-            }
+            var prev = RenderTexture.active;
+            RenderTexture.active = src;
+            atlas.ReadPixels(new Rect(0, 0, px, px), dstX, dstY, recalculateMipMaps: false);
+            RenderTexture.active = prev;
         }
 
         // ── Lighting rig ─────────────────────────────────────────────────

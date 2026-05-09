@@ -24,6 +24,14 @@ namespace SpriteBakerDemo.EditorTools
             "Universal Render Pipeline/Simple Lit",
             "Universal Render Pipeline/Unlit",
             "SpriteBaker/AtlasCutout",
+            // URP internal shaders that the offscreen capture camera's
+            // Render() needs. WebGL2 build strips them by default and
+            // logs "shader is not supported on this GPU" at runtime —
+            // the camera's final blit then no-ops, the RT stays empty,
+            // and the bake produces a transparent atlas. AlwaysIncluded
+            // forces them in.
+            "Hidden/CoreSRP/CoreCopy",
+            "Hidden/Universal Render Pipeline/StencilDitherMaskSeed",
         };
 
         public int callbackOrder => 0;
