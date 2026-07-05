@@ -4,7 +4,7 @@ Drop-in **runtime sprite-atlas baker for Unity 6 / URP**. Take any 3D animated c
 
 <blockquote>
 <a href="https://store.steampowered.com/app/2269500/"><img src="docs/leap-of-legends-icon.png" align="left" width="70" height="70" alt="Leap of Legends"></a>
-Built for and battle-tested in <strong><a href="https://leapoflegends.com">Leap of Legends</a></strong> — a cross-platform multiplayer game in active development on Steam, Google Play (internal testing), TestFlight, and macOS. The mobile build's lowest quality preset uses this pipeline to bake every animal-character into a sprite atlas at start, dropping the per-character GPU cost from a 60-bone skinned mesh to a flat textured quad. <a href="https://store.steampowered.com/app/2269500/">Wishlist on Steam</a> — public mobile store pages coming soon.
+Built for and battle-tested in <strong><a href="https://leapoflegends.com">Leap of Legends</a></strong>, a cross-platform multiplayer game now live with full cross-play across Steam, iOS, and Android. The mobile build's lowest quality preset uses this pipeline to bake every animal-character into a sprite atlas at start, dropping the per-character GPU cost from a 60-bone skinned mesh to a flat textured quad. Play now on <a href="https://store.steampowered.com/app/2269500/">Steam</a>, the <a href="https://apps.apple.com/us/app/leap-of-legends/id6761757484">App Store</a>, and <a href="https://play.google.com/store/apps/details?id=com.exceptionly.leapoflegends">Google Play</a>.
 </blockquote>
 
 ---
@@ -360,10 +360,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the PR checklist.
 
 ## Credits & support
 
-Made for **[Leap of Legends](https://leapoflegends.com)** — a cross-platform physics-heavy multiplayer game in active development, targeting Steam, iOS, Android, and Mac. If this saved you time:
+Made for **[Leap of Legends](https://leapoflegends.com)**, a cross-platform physics-heavy multiplayer game now live with cross-play on Steam, iOS, Android, and Mac. If this saved you time:
 
 - ⭐ Star the repo
-- 🎮 [Wishlist Leap of Legends on Steam](https://store.steampowered.com/app/2269500/) — mobile store pages coming soon
+- 🎮 Play Leap of Legends: [Steam](https://store.steampowered.com/app/2269500/) · [App Store](https://apps.apple.com/us/app/leap-of-legends/id6761757484) · [Google Play](https://play.google.com/store/apps/details?id=com.exceptionly.leapoflegends)
 - 🐦 Shout out [@sinanata](https://x.com/sinanata)
 
 ## Licence
