@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Live WebGL preview
+    url: https://sinanata.github.io/unity-3d-to-sprite-baker/
+    about: Compare live 3D vs baked sprite playback before filing — reproduce your case here first.
+  - name: Contributing guide
+    url: https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/CONTRIBUTING.md
+    about: Ground rules and the pull-request checklist.

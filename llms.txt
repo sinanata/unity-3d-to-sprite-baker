@@ -1,0 +1,28 @@
+# Unity 3D-to-Sprite Baker
+
+> Drop-in runtime sprite-atlas baker for Unity 6 + URP. Take any 3D animated character and bake every clip × frame into a single packed Texture2D atlas at game start — orthographic offscreen capture, async GPU readback, multi-row animation, blend-shape variants, multi-angle turntables — then play it back as a flat textured quad that shares one material across every instance. Namespace `SpriteBaker`, MIT licensed. Battle-tested in the shipping cross-platform game Leap of Legends.
+
+Needs Unity 6 (6000.x or newer) and URP. Baking is a runtime, async, coroutine-driven process (one frame captured per Unity frame) — not editor-only, not synchronous. Enqueue with `SpriteAtlasBaker.Instance.Enqueue`, read with `SpriteAtlasCache.TryGet`, play with `AnimatedSpriteRenderer.Bind`. The playback material is URP/Unlit from a template `.mat` (not the bundled AtlasCutout shader — a custom URP shader compiled at runtime renders black on WebGL2), so copy the whole `Assets/SpriteBaker/` folder including `Editor/` and the `.mat`.
+
+## Documentation
+- [README](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/README.md): what it is, install, quick start, the full API, architecture, tuning notes, and when not to use it.
+- [Agent guide (AGENTS.md)](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/AGENTS.md): golden rules and API map for AI coding agents.
+- [Contributing](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/CONTRIBUTING.md): ground rules and the pull-request checklist.
+- [Changelog](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/CHANGELOG.md): version history in Keep a Changelog format.
+
+## Source of truth (read these to call the API correctly)
+- [SpriteAtlasBaker.cs](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/Assets/SpriteBaker/Runtime/SpriteAtlasBaker.cs): the coroutine bake worker — `Enqueue`, capture, readback, atlas + material assembly.
+- [SpriteBakeRequest.cs](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/Assets/SpriteBaker/Runtime/SpriteBakeRequest.cs): the input struct (all fields) plus `CaptureLighting`.
+- [SpriteAtlasCache.cs](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/Assets/SpriteBaker/Runtime/SpriteAtlasCache.cs): `TryGet` / `IsReady` / `Evict` / `Clear`.
+- [AnimatedSpriteRenderer.cs](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/Assets/SpriteBaker/Runtime/AnimatedSpriteRenderer.cs): runtime playback — `Bind`, `SetRow`, `SetFacing`, `SetYaw`.
+- [BakedSpriteAtlas.cs](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/Assets/SpriteBaker/Runtime/BakedSpriteAtlas.cs): the output struct (atlas, shared material, per-row metadata, yaw count).
+- [SpriteBakerDemo.cs](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/Assets/SpriteBaker/Demo/SpriteBakerDemo.cs): the minimal drop-on-a-GameObject example.
+
+## Live demo
+- [Interactive WebGL preview](https://sinanata.github.io/unity-3d-to-sprite-baker/): four cards, each splitting live 3D (left) vs baked sprite playback (right); flip Idle / Run / Jump, drag the frame-size and frame-rate sliders to re-bake.
+
+## Sibling tools
+- [Unity UI Toolkit Design System](https://github.com/sinanata/unity-ui-document-design-system), the [Voronoi mesh fracturer](https://github.com/sinanata/unity-mesh-fracture), the [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer), and the [cross-platform build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator).
+
+## Optional
+- [Leap of Legends](https://leapoflegends.com): the shipping cross-platform game this baker was built for and is battle-tested in.

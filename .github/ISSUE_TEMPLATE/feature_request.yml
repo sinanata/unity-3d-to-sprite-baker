@@ -1,0 +1,34 @@
+name: Feature or improvement request
+description: Suggest an editor tool, pipeline path, or capture improvement.
+title: "[Request]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you requesting?
+      options:
+        - Editor tool (bake atlas + metadata to a .asset)
+        - Compute-shader / multi-character atlas composition
+        - Render-pipeline shader (Built-in / HDRP)
+        - Capture option (rotation, lighting, multi-angle, blend shapes)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+      description: Describe the capability and the use case it serves.
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed API (optional)
+      description: Sketch the call shape — the `SpriteBakeRequest` fields or renderer methods you'd add.
+      render: csharp
+  - type: markdown
+    attributes:
+      value: |
+        New runtime code lives in the `SpriteBaker` namespace and must keep both demos working. See [CONTRIBUTING.md](https://github.com/sinanata/unity-3d-to-sprite-baker/blob/main/CONTRIBUTING.md).

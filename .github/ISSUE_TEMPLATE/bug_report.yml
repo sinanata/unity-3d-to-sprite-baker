@@ -1,0 +1,60 @@
+name: Bug report
+description: An atlas bakes or plays back incorrectly.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. If you can, reproduce it in the demo first (open `Assets/Demo/Scenes/SpriteBakerDemo.unity` and press Play) and attach the baked atlas (`atlas.EncodeToPNG()`) or a screenshot of the broken playback next to the live 3D card.
+  - type: input
+    id: unity-version
+    attributes:
+      label: Unity version
+      description: Unity 6 URP / AsyncGPUReadback behave differently across 6000.x patch releases.
+      placeholder: "6000.3.8f1"
+    validations:
+      required: true
+  - type: dropdown
+    id: pipeline
+    attributes:
+      label: Render pipeline
+      options:
+        - URP
+        - HDRP
+        - Built-in
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part?
+      options:
+        - Bake (capture / animation sampling / bounds)
+        - Atlas material / shader (black quad, alpha)
+        - Runtime playback (AnimatedSpriteRenderer)
+        - Cache (stale atlas / re-bake)
+        - Demo / build
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw versus what you expected — e.g. black quad, bind pose only, wrong orientation, feet float, atlas too big.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The prefab / rig source (Kenney, Mixamo, custom), the `SpriteBakeRequest` you built, and the `FramePixelSize` / `FrameRate`. A minimal script helps.
+      render: csharp
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I copied the whole `Assets/SpriteBaker/` folder (including `Editor/` and the template `.mat`), not just `Runtime/`.
+        - label: I set `CaptureRotation` for my rig's facing (Kenney AC2 = Euler(0,180,0)); if the pose is wrong, I tried `SampleAnimationTargetPath`.
+        - label: I reproduced this in the demo, or attached a minimal repro + the baked atlas PNG.

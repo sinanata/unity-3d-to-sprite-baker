@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this sprite baker, please star the repo and, where relevant, cite it as below."
+title: "Unity 3D-to-Sprite Baker"
+abstract: >-
+  A drop-in runtime sprite-atlas baker for Unity 6 and URP: capture any 3D
+  animated character's clips and frames into a single packed Texture2D atlas at
+  game start via an offscreen orthographic camera and async GPU readback, then
+  play the atlas back as a flat textured quad that shares one material across
+  every instance. Supports multi-row animation, blend-shape variants, and
+  multi-angle turntables. Battle-tested in the shipping cross-platform game
+  Leap of Legends.
+type: software
+authors:
+  - given-names: Sinan
+    family-names: Ata
+    website: "https://x.com/sinanata"
+repository-code: "https://github.com/sinanata/unity-3d-to-sprite-baker"
+url: "https://sinanata.github.io/unity-3d-to-sprite-baker/"
+license: MIT
+version: "0.1.0"
+date-released: "2026-05-02"
+keywords:
+  - unity
+  - unity6
+  - urp
+  - sprite
+  - sprite-atlas
+  - billboard
+  - render-to-texture
+  - imposter
+  - mobile-optimization
+  - game-development

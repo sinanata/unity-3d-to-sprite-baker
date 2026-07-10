@@ -1,5 +1,11 @@
 # Unity 3D-to-Sprite Baker
 
+[![Unity](https://img.shields.io/badge/Unity-6000.0%2B-black?logo=unity&logoColor=white)](https://unity.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live-22C55E)](https://sinanata.github.io/unity-3d-to-sprite-baker/)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Stars](https://img.shields.io/github/stars/sinanata/unity-3d-to-sprite-baker?logo=github)](https://github.com/sinanata/unity-3d-to-sprite-baker/stargazers)
+
 Drop-in **runtime sprite-atlas baker for Unity 6 / URP**. Take any 3D animated character and bake every clip × frame into a single packed atlas at game start — orthographic capture, async GPU readback, multi-row animation, blend-shape variants, all behind a 3-line API. Then play the atlas back as a flat textured quad that shares one material across every instance. Open-sourced as part of a small giving-back set of Unity tools — alongside the [UI Toolkit design system](https://github.com/sinanata/unity-ui-document-design-system), the [mesh-fracture pipeline](https://github.com/sinanata/unity-mesh-fracture), the [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer), and the [cross-platform build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator).
 
 <blockquote>
@@ -7,7 +13,25 @@ Drop-in **runtime sprite-atlas baker for Unity 6 / URP**. Take any 3D animated c
 Built for and battle-tested in <strong><a href="https://leapoflegends.com">Leap of Legends</a></strong>, a cross-platform multiplayer game now live with full cross-play across Steam, iOS, and Android. The mobile build's lowest quality preset uses this pipeline to bake every animal-character into a sprite atlas at start, dropping the per-character GPU cost from a 60-bone skinned mesh to a flat textured quad. Play now on <a href="https://store.steampowered.com/app/2269500/">Steam</a>, the <a href="https://apps.apple.com/us/app/leap-of-legends/id6761757484">App Store</a>, and <a href="https://play.google.com/store/apps/details?id=com.exceptionly.leapoflegends">Google Play</a>.
 </blockquote>
 
+> **Using an AI coding assistant?** This repo ships an [`AGENTS.md`](AGENTS.md) and an [`llms.txt`](llms.txt) so Copilot, Cursor, Codex, and Claude Code call `SpriteAtlasBaker` / `SpriteAtlasCache` / `AnimatedSpriteRenderer` correctly instead of guessing.
+
 ---
+
+## Contents
+
+- [Demo](#demo)
+- [Why this exists](#why-this-exists)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [API](#api)
+- [Architecture](#architecture)
+- [What makes this robust](#what-makes-this-robust)
+- [Tuning notes](#tuning-notes)
+- [When NOT to use this](#when-not-to-use-this)
+- [Contributing](#contributing)
+- [Credits & support](#credits--support)
+- [Licence](#licence)
 
 ```
 SpriteAtlasBaker.Instance.Enqueue(new SpriteBakeRequest {
