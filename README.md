@@ -6,7 +6,7 @@
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Stars](https://img.shields.io/github/stars/sinanata/unity-3d-to-sprite-baker?logo=github)](https://github.com/sinanata/unity-3d-to-sprite-baker/stargazers)
 
-Drop-in **runtime sprite-atlas baker for Unity 6 / URP**. Take any 3D animated character and bake every clip × frame into a single packed atlas at game start — orthographic capture, async GPU readback, multi-row animation, blend-shape variants, all behind a 3-line API. Then play the atlas back as a flat textured quad that shares one material across every instance. Open-sourced as part of a small giving-back set of Unity tools — alongside the [UI Toolkit design system](https://github.com/sinanata/unity-ui-document-design-system), the [mesh-fracture pipeline](https://github.com/sinanata/unity-mesh-fracture), the [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer), and the [cross-platform build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator).
+Drop-in **runtime sprite-atlas baker for Unity 6 / URP**. Take any 3D animated character and bake every clip × frame into a single packed atlas at game start — orthographic capture, async GPU readback, multi-row animation, blend-shape variants, all behind a 3-line API. Then play the atlas back as a flat textured quad that shares one material across every instance. Open-sourced as part of a small giving-back set of Unity tools — alongside the [UI Toolkit design system](https://github.com/sinanata/unity-ui-toolkit-design-system), the [mesh-fracture pipeline](https://github.com/sinanata/unity-mesh-fracture), the [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer), and the [cross-platform build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator).
 
 <blockquote>
 <a href="https://store.steampowered.com/app/2269500/"><img src="docs/leap-of-legends-icon.png" align="left" width="70" height="70" alt="Leap of Legends"></a>
@@ -63,11 +63,11 @@ The repo is a complete Unity project — clone, open in Unity 6, press Play. The
 
 - 4 [Kenney animated-characters-2](https://kenney.nl/assets/animated-characters-2) skin variants on the same rig (skater male / skater female / criminal / cyborg). Each card stages the live SkinnedMeshRenderer + the baked sprite playback at the same world position so the silhouette parity is visible at a glance.
 - The **loose-clip bake path** (`SpriteBakeRequest.Clips`) feeds the three Kenney FBX animations (`idle.fbx`, `run.fbx`, `jump.fbx`) directly into the baker via a `PlayableGraph` + `AnimationClipPlayable` — no AnimatorController authoring required. The same path also runs an AnimatorController for the live mesh on the left half of each card, demonstrating both APIs work side by side.
-- A UI Toolkit overlay (frame-size slider, frame-rate slider, Idle/Run/Jump tabs, status toast, hotkey legend) authored against the [Unity UI Toolkit Design System](https://github.com/sinanata/unity-ui-document-design-system) — same dark token palette, same `.ds-btn` / `.ds-slider` / `.ds-toast` components used in [Leap of Legends](https://leapoflegends.com).
+- A UI Toolkit overlay (frame-size slider, frame-rate slider, Idle/Run/Jump tabs, status toast, hotkey legend) authored against the [Unity UI Toolkit Design System](https://github.com/sinanata/unity-ui-toolkit-design-system) — same dark token palette, same `.ds-btn` / `.ds-slider` / `.ds-toast` components used in [Leap of Legends](https://leapoflegends.com).
 
 ### Cloning this demo project
 
-The demo's UI consumes the design system as a git submodule (vendored at `Vendor/unity-ui-document-design-system`) and links the drop-in folder into `Assets/DesignSystem` via a per-clone OS link. Pure-runtime consumers of the baker (the recipe in [Installation](#installation) below) don't need the design system — only this repo's demo scene does.
+The demo's UI consumes the design system as a git submodule (vendored at `Vendor/unity-ui-toolkit-design-system`) and links the drop-in folder into `Assets/DesignSystem` via a per-clone OS link. Pure-runtime consumers of the baker (the recipe in [Installation](#installation) below) don't need the design system — only this repo's demo scene does.
 
 ```bash
 git clone --recurse-submodules https://github.com/sinanata/unity-3d-to-sprite-baker
@@ -78,12 +78,12 @@ Then create the link from `Assets/DesignSystem` to the vendored copy:
 
 ```powershell
 # Windows — directory junction (no admin / Developer Mode required)
-cmd /c mklink /J Assets\DesignSystem Vendor\unity-ui-document-design-system\Assets\DesignSystem
+cmd /c mklink /J Assets\DesignSystem Vendor\unity-ui-toolkit-design-system\Assets\DesignSystem
 ```
 
 ```bash
 # macOS / Linux — symbolic link
-ln -s ../Vendor/unity-ui-document-design-system/Assets/DesignSystem Assets/DesignSystem
+ln -s ../Vendor/unity-ui-toolkit-design-system/Assets/DesignSystem Assets/DesignSystem
 ```
 
 The junction / symlink itself is gitignored; each contributor re-runs the command after their first clone. Open in Unity 6000.3.8f1 (or compatible) and press Play in `Assets/Demo/Scenes/SpriteBakerDemo.unity`.

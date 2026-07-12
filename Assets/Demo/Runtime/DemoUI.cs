@@ -12,7 +12,7 @@ namespace SpriteBakerDemo
     /// <summary>
     /// UI Toolkit overlay. Layout in <c>Resources/UI/DemoUI.uxml</c>,
     /// styled by the ds-* design system at <c>Assets/DesignSystem</c>
-    /// (junctioned from the unity-ui-document-design-system submodule).
+    /// (junctioned from the unity-ui-toolkit-design-system submodule).
     /// This file only binds data + callbacks; no inline styling.
     /// </summary>
     public class DemoUI : MonoBehaviour

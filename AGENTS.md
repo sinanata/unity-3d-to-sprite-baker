@@ -120,4 +120,4 @@ Windows-first Unity 6 project (host editor 6000.3.8f1). There is no unit-test su
 - Contribution rules and PR checklist: `CONTRIBUTING.md`
 - Version history: `CHANGELOG.md`
 - Machine-readable index: `llms.txt`
-- Sibling tools: [design system](https://github.com/sinanata/unity-ui-document-design-system) · [mesh fracturer](https://github.com/sinanata/unity-mesh-fracture) · [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer) · [build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator)
+- Sibling tools: [design system](https://github.com/sinanata/unity-ui-toolkit-design-system) · [mesh fracturer](https://github.com/sinanata/unity-mesh-fracture) · [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer) · [build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator)

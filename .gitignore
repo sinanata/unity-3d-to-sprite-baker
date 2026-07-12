@@ -13,8 +13,8 @@ Tools/Build/config.local.json
 Tools/Build/output/
 
 # Vendored design system — installed via:
-#   git submodule update --init Vendor/unity-ui-document-design-system
-#   mklink /J Assets\DesignSystem Vendor\unity-ui-document-design-system\Assets\DesignSystem
+#   git submodule update --init Vendor/unity-ui-toolkit-design-system
+#   mklink /J Assets\DesignSystem Vendor\unity-ui-toolkit-design-system\Assets\DesignSystem
 # The junction is per-clone (Windows-only path; macOS/Linux contributors use ln -s),
 # so we don't track the link itself OR Unity's auto-generated .meta for it.
 Assets/DesignSystem

@@ -22,7 +22,7 @@ Needs Unity 6 (6000.x or newer) and URP. Baking is a runtime, async, coroutine-d
 - [Interactive WebGL preview](https://sinanata.github.io/unity-3d-to-sprite-baker/): four cards, each splitting live 3D (left) vs baked sprite playback (right); flip Idle / Run / Jump, drag the frame-size and frame-rate sliders to re-bake.
 
 ## Sibling tools
-- [Unity UI Toolkit Design System](https://github.com/sinanata/unity-ui-document-design-system), the [Voronoi mesh fracturer](https://github.com/sinanata/unity-mesh-fracture), the [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer), and the [cross-platform build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator).
+- [Unity UI Toolkit Design System](https://github.com/sinanata/unity-ui-toolkit-design-system), the [Voronoi mesh fracturer](https://github.com/sinanata/unity-mesh-fracture), the [prefab-thumbnail renderer](https://github.com/sinanata/unity-prefab-thumbnail-renderer), and the [cross-platform build orchestrator](https://github.com/sinanata/unity-cross-platform-local-build-orchestrator).
 
 ## Optional
 - [Leap of Legends](https://leapoflegends.com): the shipping cross-platform game this baker was built for and is battle-tested in.
